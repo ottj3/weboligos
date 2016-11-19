@@ -78,12 +78,12 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi) extends Contr
     * a path of `/`.
     */
   def index = Action {
-    implicit request => Ok(views.html.index("Welcome to WebOligos", submitForm))
+    implicit request => Ok(views.html.index("Welcome to WebOligos", submitForm, jobForm))
   }
 
   def submit = Action { implicit request =>
     submitForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(views.html.index("Error with form submission.", formWithErrors)),
+      formWithErrors => BadRequest(views.html.index("Error with form submission.", formWithErrors, jobForm)),
       job => {
         val jobId = "123456"
         System.out.println(job.toString())
@@ -92,9 +92,18 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi) extends Contr
     )
   }
 
+  def getJob = Action { implicit request =>
+    jobForm.bindFromRequest.fold(
+      formWithErrors => BadRequest(views.html.index("Error with form submission.", submitForm, jobForm)),
+      jobId => {
+        Redirect(routes.WebOligosController.view(jobId))
+      }
+    )
+  }
+
   def view(jobId: String) = Action {
     //Ok(views.html.view(jobId))
-    Ok(views.html.index("Viewing job ".concat(jobId), submitForm))
+    Ok(views.html.index("Viewing job ".concat(jobId), submitForm, jobForm))
   }
 
   def test = Action {
@@ -109,7 +118,8 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi) extends Contr
         -36,
         Some(new Codon("CTA", .105, .8, 4)), Some(new Codon("TCG", .16, .95, 3)), None, None,
         Option("GCTAGC,TGTACA,TTCGAA,TGGCCA,CCATGG,GCTAGC,CTCGAG,VCTCGAGB,CCWWGG,CTCGAG,CTCGAG,AGGAGG")
-      ))
+      )),
+      jobForm
     ))
   }
 

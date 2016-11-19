@@ -5,6 +5,7 @@
 # Shows index page with form submission
 GET     /                           controllers.WebOligosController.index
 POST    /submit                     controllers.WebOligosController.submit
+POST    /view                       controllers.WebOligosController.getJob
 GET     /view/*jobId                controllers.WebOligosController.view(jobId: String)
 GET     /test                       controllers.WebOligosController.test
 
