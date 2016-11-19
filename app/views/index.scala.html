@@ -2,9 +2,8 @@
  * This template takes a single argument, a String containing a
  * message to display.
  *@
-@(message: String, submitForm: Form[(String, Int, Int, Int, Int, Int, Int, Option[Codon], Option[Codon], Option[Codon], Option[Codon], Option[String])], jobForm: Form[(String)])(implicit messages: Messages)
-
-@import b3.vertical.fieldConstructor
+@import model.Codon
+@(message: String, submitForm: Form[(String, Int, Int, Int, Int, Int, Int, Option[Codon], Option[Codon], Option[Codon], Option[Codon], Option[String])], jobForm: Form[(String)])(implicit messages: Messages, flash: Flash)
 
 @*
  * Call the `main` template with two arguments. The first
@@ -22,8 +21,8 @@
                 <div class="col-md-6"><p>To get started, fill the form below. If you already submitted a job, you can use the ID to view results on the right.</p></div>
                 <div class="form-inline row col-md-4 col-md-offset-2">
                 @b3.clear.form(routes.WebOligosController.getJob()) { implicit cfc =>
-                    @b3.inputWrapped( "search", jobForm("jobId"), 'placeholder -> "Job ID" ) { input =>
-                        <div class="input-group">
+                    @b3.inputWrapped("search", jobForm("jobId"), if(flash.get("error").isDefined) 'placeholder -> "Job not found!" else 'placeholder -> "Job ID") { input =>
+                        <div class="input-group @if(flash.get("error").isDefined) { has-error } else {}">
                             <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
                             @input
                             <span class="input-group-btn">
@@ -36,41 +35,6 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-8 col-md-offset-2">
-            @b3.form(routes.WebOligosController.submit) {
-                @b3.text(submitForm("rna"), '_label -> "RNA Sequence", 'placeholder -> "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA")
-                <div class="form-inline row" id="oligoParams">
-                    @defining(b3.inline.fieldConstructorSpecific) { implicit ifc =>
-                        <div class="col-md-3">@b3.number(submitForm("oligoLength"), '_label -> "Oligo Length", 'placeholder -> "180")</div>
-                        <div class="col-md-4 col-md-offset-1">@b3.number(submitForm("overlapSize"), '_label -> "Overlap Size", 'placeholder -> "30")</div>
-                        <div class="col-md-3 col-md-offset-1">@b3.number(submitForm("overlapDiffs"), '_label -> "Min Diffs", 'placeholder -> "4", '_help -> "Minimum differences for an overlap to be considered unique")</div>
-                    }
-                </div>
-                <div class="form-inline row" id="seqParams">
-                    @defining(b3.inline.fieldConstructorSpecific) { implicit ifc =>
-                        <div class="col-md-3">@b3.number(submitForm("start"), '_label -> "Start", 'placeholder -> "36", '_help -> "First position where gene expression begins.")</div>
-                        <div class="col-md-4 col-md-offset-1">@b3.number(submitForm("end"), '_label -> "End", 'placeholder -> "0", '_help -> "Last position of gene expression, or 0 for whole sequence.")</div>
-                        <div class="col-md-3 col-md-offset-1">@b3.number(submitForm("offset"), '_label -> "Offset", 'placeholder -> "-36", '_help -> "First position to start replacements. Used for masking start of sequence.")</div>
-                    }
-                </div>
-                <label class="control-label" for="codons">Codons of Interest</label>
-                <div id="codons">
-                @for(i <- 0 to 3) {
-                    <div class="form-inline row" id="codon[@i]">
-                    @defining(b3.inline.fieldConstructorSpecific) { implicit ifc =>
-                        <div class="col-md-3">@b3.text(submitForm(s"codon[$i].name"), if (i == 0) '_label -> "Codon" else '_hiddenLabel -> "Codon", if (i == 0) 'placeholder -> "CTA" else if (i == 1) 'placeholder -> "TCG" else 'placeholder -> "")</div>
-                        <div class="col-md-3">@b3.number(submitForm(s"codon[$i].min"), if (i == 0) '_label -> "Min" else '_hiddenLabel -> "Min", if (i == 0) 'placeholder -> ".105" else if (i == 1) 'placeholder -> ".16" else 'placeholder -> "", 'step -> "any")</div>
-                        <div class="col-md-3">@b3.number(submitForm(s"codon[$i].max"), if (i == 0) '_label -> "Max" else '_hiddenLabel -> "Max", if (i == 0) 'placeholder -> ".80" else if (i == 1) 'placeholder -> ".95" else 'placeholder -> "", 'step -> "any")</div>
-                        <div class="col-md-3">@b3.number(submitForm(s"codon[$i].levels"), if (i == 0) '_label -> "Levels" else '_hiddenLabel -> "Levels", if (i == 0) 'placeholder -> 4 else if (i == 1) 'placeholder -> 3 else 'placeholder -> "")</div>
-                    }
-                    </div>
-                }
-                </div>
-                @b3.text(submitForm("restrictions"), '_label -> "Enzyme Restriction Sites", 'placeholder -> "GCTAGC,TGTACA,TTCGAA,TGGCCA,CCATGG,GCTAGC,CTCGAG,VCTCGAGB,CCWWGG,CTCGAG,CTCGAG,AGGAGG", '_help -> "List of enzyme binding sites to avoid in final sequences")
-                @b3.submit('class -> "btn btn-default") { Submit }
-            }
-        </div>
-    </div>
+    @oligoForm(disable = false, submitForm)
 </div>
 }

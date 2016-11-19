@@ -2,22 +2,19 @@ package controllers
 
 import javax.inject._
 
+import com.avaje.ebean.annotation.Transactional
+import edu.tcnj.oligos.library.Library
+import model.Codon
+import model.OligoJob
 import play.api.data._
 import play.api.data.Forms._
 import play.api.data.format.Formats._
 import play.api.mvc._
 import play.api.data.validation.Constraints._
-import play.api.i18n.{ MessagesApi, I18nSupport }
+import play.api.i18n.{I18nSupport, MessagesApi}
+import services.{Counter, DBQueries}
 
-/**
-  * Represents a Codon of interest
-  *
-  * @param name IUPAC 3-letter nucleotide
-  * @param min decimal of minimum representation
-  * @param max decimal of maximum representation
-  * @param levels number of intervals between min and max to express
-  */
-case class Codon(name: String, min: Double, max: Double, levels: Int)
+
 
 /**
  * This controller creates an `Action` to handle HTTP requests to the
@@ -26,7 +23,7 @@ case class Codon(name: String, min: Double, max: Double, levels: Int)
  * input.
  */
 @Singleton
-class WebOligosController @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: Counter, val db: DBQueries) extends Controller with I18nSupport {
 
   val jobForm = Form(single("jobId" -> nonEmptyText(minLength = 6, maxLength = 6)))
 
@@ -81,32 +78,39 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi) extends Contr
     implicit request => Ok(views.html.index("Welcome to WebOligos", submitForm, jobForm))
   }
 
+  @Transactional
   def submit = Action { implicit request =>
     submitForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(views.html.index("Error with form submission.", formWithErrors, jobForm)),
+      formWithErrors => BadRequest(views.html.index("Welcome to WebOligos", formWithErrors, jobForm)),
       job => {
-        val jobId = "123456"
-        System.out.println(job.toString())
-        Redirect(routes.WebOligosController.view(jobId))
+        val jobId: Long = counter.nextCount()
+        val oligoJob = new OligoJob(jobId, job._1, job._2, job._3, job._4, job._5, job._6, job._7, job._8, job._9, job._10, job._11, job._12.getOrElse(""), Library.Phase.INITIALIZING, null, null)
+        db.store(oligoJob)
+        Redirect(routes.WebOligosController.view(jobId)).flashing("created" -> "true", "success" -> "Job was successfully created and is pending processing.")
       }
     )
   }
 
   def getJob = Action { implicit request =>
     jobForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(views.html.index("Error with form submission.", submitForm, jobForm)),
+      formWithErrors => BadRequest(views.html.index("Welcome to WebOligos", submitForm, jobForm)),
       jobId => {
-        Redirect(routes.WebOligosController.view(jobId))
+        Redirect(routes.WebOligosController.view(jobId.toLong)).flashing("found" -> "true", "success" -> "Job was found in the database. Retrieving record...")
       }
     )
   }
 
-  def view(jobId: String) = Action {
-    //Ok(views.html.view(jobId))
-    Ok(views.html.index("Viewing job ".concat(jobId), submitForm, jobForm))
+  @Transactional
+  def view(jobId: Long) = Action { implicit request =>
+    val job: Option[OligoJob] = db.get(jobId.toLong)
+    if(job.isEmpty) {
+      Redirect(routes.WebOligosController.index()).flashing("error" -> "jobNotFound")
+    } else {
+      Ok(views.html.result("Viewing job #".concat(jobId.toString), job.get, submitForm))
+    }
   }
 
-  def test = Action {
+  def test = Action { implicit request =>
     Ok(views.html.index("Test Form",
       submitForm.fill((
         "ATGGCTAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCTACATACGGAAAGCTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCCCGTTATCCGGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAACGCACTATATCTTTCAAAGATGACGGGAACTACAAGACGCGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATCGTATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTCGGACACAAACTCGAGTACAACTATAACTCACACAATGTATACATCACGGCAGACAAACAAAAGAATGGAATCAAAGCTAACTTCAAAATTCGCCACAACATTGAAGATGGATCCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCGACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGCGTGACCACATGGTCCTTCTTGAGTTTGTAACTGCTGCTGGGATTACACATGGCATGGATGAGCTCTACAAATAA",

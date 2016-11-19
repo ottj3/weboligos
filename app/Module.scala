@@ -1,19 +1,21 @@
 import com.google.inject.AbstractModule
 import java.time.Clock
 
-import services.ApplicationTimer
+import akka.actor.Scheduler
+import play.api.libs.concurrent.AkkaGuiceSupport
+import services.{ApplicationTimer, AtomicCounter, Counter, DBQueries}
 
 /**
  * This class is a Guice module that tells Guice how to bind several
  * different types. This Guice module is created when the Play
  * application starts.
-
+ *
  * Play will automatically use any class called `Module` that is in
  * the root package. You can create modules in other locations by
  * adding `play.modules.enabled` settings to the `application.conf`
  * configuration file.
  */
-class Module extends AbstractModule {
+class Module extends AbstractModule with AkkaGuiceSupport {
 
   override def configure() = {
     // Use the system clock as the default implementation of Clock
@@ -21,6 +23,14 @@ class Module extends AbstractModule {
     // Ask Guice to create an instance of ApplicationTimer when the
     // application starts.
     bind(classOf[ApplicationTimer]).asEagerSingleton()
+    // Create instance of the DB class
+    bind(classOf[DBQueries]).asEagerSingleton()
+    // Set AtomicCounter as the implementation for Counter.
+    bind(classOf[Counter]).to(classOf[AtomicCounter])
+
+    // task bindings for actor
+    bindActor[SchedulerActor]("scheduler-actor")
+    bind(classOf[Scheduler]).asEagerSingleton()
   }
 
 }
