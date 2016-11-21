@@ -23,7 +23,7 @@ import services.{Counter, DBQueries}
  * input.
  */
 @Singleton
-class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: Counter, val db: DBQueries) extends Controller with I18nSupport {
+class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: Counter, val db: DBQueries, val queueController: QueueController) extends Controller with I18nSupport {
 
   val jobForm = Form(single("jobId" -> nonEmptyText(minLength = 6, maxLength = 6)))
 
@@ -86,6 +86,7 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
         val jobId: Long = counter.nextCount()
         val oligoJob = new OligoJob(jobId, job._1, job._2, job._3, job._4, job._5, job._6, job._7, job._8, job._9, job._10, job._11, job._12.getOrElse(""), Library.Phase.INITIALIZING, null, null)
         db.store(oligoJob)
+        queueController.add(oligoJob)
         Redirect(routes.WebOligosController.view(jobId)).flashing("created" -> "true", "success" -> "Job was successfully created and is pending processing.")
       }
     )

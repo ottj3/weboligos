@@ -1,7 +1,7 @@
 import com.google.inject.AbstractModule
 import java.time.Clock
 
-import akka.actor.Scheduler
+import jobs.{Scheduler, SchedulerActor}
 import play.api.libs.concurrent.AkkaGuiceSupport
 import services.{ApplicationTimer, AtomicCounter, Counter, DBQueries}
 

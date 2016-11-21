@@ -4,6 +4,8 @@ import java.util
 import javax.persistence.Id
 
 import com.avaje.ebean.Model
+import com.google.common.collect.EnumBiMap
+import edu.tcnj.oligos.data.AminoAcid
 import play.data.validation.Constraints
 import edu.tcnj.oligos.library.Library.Phase
 import edu.tcnj.oligos.library._
@@ -38,4 +40,5 @@ case class ResultLibrary(var lib: Library) {
       new Fragment.Range(0, lib.getSize - 1), lib.getOligos, lib.getOligoLength, lib.getOverlapLength
   )
   var genes: util.List[Gene] = JavaHelper.seqToGene(geneSeq, lib)
+  var coi: EnumBiMap[AminoAcid, edu.tcnj.oligos.data.Codon] = lib.getCodonsOfInterest
 }
