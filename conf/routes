@@ -4,9 +4,13 @@
 
 # Shows index page with form submission
 GET     /                           controllers.WebOligosController.index
+# Submits form
 POST    /submit                     controllers.WebOligosController.submit
+# Lookup job
 POST    /view                       controllers.WebOligosController.getJob
+# View job/results
 GET     /view/*jobId                controllers.WebOligosController.view(jobId: Long)
+# Fill in index form with example data
 GET     /test                       controllers.WebOligosController.test
 
 # Map static resources from the /public folder to the /assets URL path

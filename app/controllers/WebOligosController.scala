@@ -78,6 +78,7 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
     implicit request => Ok(views.html.index("Welcome to WebOligos", submitForm, jobForm))
   }
 
+  // Form submission action
   @Transactional
   def submit = Action { implicit request =>
     submitForm.bindFromRequest.fold(
@@ -93,6 +94,7 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
     )
   }
 
+  // job lookup form
   def getJob = Action { implicit request =>
     jobForm.bindFromRequest.fold(
       formWithErrors => BadRequest(views.html.index("Welcome to WebOligos", submitForm, jobForm)),
@@ -102,6 +104,7 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
     )
   }
 
+  // /view/id request
   @Transactional
   def view(jobId: Long) = Action { implicit request =>
     val job: Option[OligoJob] = db.get(jobId.toLong)
@@ -112,6 +115,7 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
     }
   }
 
+  // /test form for fillin
   def test = Action { implicit request =>
     Ok(views.html.index("Test Form",
       submitForm.fill((

@@ -1,7 +1,9 @@
 import javax.inject._
 
-import play.api._
+import com.mohiva.play.htmlcompressor.HTMLCompressorFilter
+import com.mohiva.play.xmlcompressor.XMLCompressorFilter
 import play.api.http.HttpFilters
+import play.api.mvc.EssentialFilter
 
 /**
  * This class configures filters that run on every request. This
@@ -12,14 +14,15 @@ import play.api.http.HttpFilters
  * from a different class by adding a `play.http.filters` setting to
  * the `application.conf` configuration file.
  *
- * @param env Basic environment settings for the current application.
  */
 @Singleton
 class Filters @Inject() (
-  env: Environment) extends HttpFilters {
+      htmlCompressorFilter: HTMLCompressorFilter,
+      xmlCompressorFilter: XMLCompressorFilter) extends HttpFilters {
 
-  override val filters = {
-    Seq.empty
-  }
+  override def filters: Seq[EssentialFilter] = Seq(
+    htmlCompressorFilter,
+    xmlCompressorFilter
+  )
 
 }

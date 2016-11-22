@@ -12,6 +12,9 @@ import edu.tcnj.oligos.library._
 import edu.tcnj.oligos.ui.Runner
 import services.JavaHelper
 
+/**
+ * Model holding all the information related to one job.
+ */
 class OligoJob(
                 @Id var id: Long,
                 @Constraints.Required var rna: String,
@@ -35,6 +38,9 @@ class OligoJob(
 
 }
 
+/**
+ * Stores only the oligos, genes, and codons of interest from a library, for easier persistence.
+ */
 case class ResultLibrary(var lib: Library) {
   var oligos: util.Map[Integer, util.List[Oligo]] = lib.getOligos
   @transient var geneSeq: util.List[Sequence] = LibraryUtils.buildPermutations(
