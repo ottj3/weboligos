@@ -68,7 +68,7 @@ public final class JavaHelper {
                 for (Map.Entry<edu.tcnj.oligos.data.Codon, Integer> deltas : oligo.getDeltas().entrySet()) {
                     deltaList.add(deltas.getKey() + " (" + deltas.getKey().getAminoAcid() + "): " + deltas.getValue());
                 }
-                sb.append("&gt; ").append(entry.getKey()).append(" (").append(var++).append(") [")
+                sb.append("> ").append(entry.getKey()).append(" (").append(var++).append(") [")
                         .append(Joiner.on(", ").join(deltaList)).append("]").append("\n")
                         .append(oligo).append("\n");
             }
@@ -92,7 +92,7 @@ public final class JavaHelper {
                 }
             }
             name += Joiner.on(", ").join(codonFreqs) + "]";
-            sb.append("&gt; ").append(name).append(" ").append(gene.getCPS())
+            sb.append("> ").append(name).append(" ").append(gene.getCPS())
                 .append("\n").append(gene).append("\n");
         }
         return sb.toString();

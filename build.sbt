@@ -1,4 +1,4 @@
-name := """play-scala"""
+name := """web-oligos"""
 
 version := "1.0-SNAPSHOT"
 

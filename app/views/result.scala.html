@@ -21,24 +21,28 @@
         @oligoForm(disable = true, submitForm.fill((job.rna, job.oligoLength, job.overlapSize, job.overlapDiffs, job.start, job.end, job.offset, job.codon0, job.codon1, job.codon2, job.codon3, Some(job.restrictions))))
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
-                <h3>Job Status: @{var s = job.phase.toString; s(0).toUpper + s.substring(1).toLowerCase}</h3>
+                <h3><a href="javascript:location.reload(true)"><span class="glyphicon glyphicon-refresh"></span></a>Job Status: @{
+                // update job status on query
+                var p = if (job.runner != null && job.runner.getLastLib != null) job.runner.getLastLib.getExecutionPhase
+                        else job.phase
+                job.phase = p // update job phase with library phase if library is ahead
+                var s =job.phase.toString;
+                (s(0).toUpper + s.substring(1).toLowerCase).replace('_', ' ') // final text
+                }</h3>
             </div>
         </div>
         @if(job.results != null){
         <div class="row">
             <div class="col-md-6">
                 <h4>Oligonucleotides</h4>
-                <pre class="pre-scrollable">
-                @JavaHelper.oligosToOutput(job.results.oligos)
-                </pre>
+                <pre class="pre-scrollable">@JavaHelper.oligosToOutput(job.results.oligos)</pre>
             </div>
             <div class="col-md-6">
                 <h4>Gene Variants</h4>
-                <pre class="pre-scrollable">
-                @JavaHelper.genesToOutput(job.results.genes, job.results.coi)
-                </pre>
+                <pre class="pre-scrollable">@JavaHelper.genesToOutput(job.results.genes, job.results.coi)</pre>
             </div>
         </div>
         }
+        @if(job.msg != null){<div class="col-md-8 col-md-offset-2"><h4>Error: @job.msg</h4></div>}
     </div>
 }

@@ -46,12 +46,7 @@ class SchedulerActor @Inject() (queueController: QueueController) extends Actor 
           job.runner.run()
           job.results = new ResultLibrary(job.runner.getLastLib)
         } catch {
-          case ie: InterruptedException => {
-            job.runner.getLastLib.setExecutionPhase(Phase.CANCELLED)
-          }
-          case oose: OutOfSwapsException => {
-            job.runner.getLastLib.setExecutionPhase(Phase.ERRORED)
-          }
+          case e: Throwable => handleError(e, job)
         }
         lastStart = 0
         currJob = null
@@ -59,6 +54,33 @@ class SchedulerActor @Inject() (queueController: QueueController) extends Actor 
     }
   }
 
+  def handleError(e: Throwable, job: OligoJob): Unit = {
+    e match {
+      case ie: InterruptedException => {
+        job.runner.getLastLib.setExecutionPhase(Phase.CANCELLED)
+        job.msg = "Job was cancelled. Took too long?"
+      }
+      case oose: OutOfSwapsException => {
+        job.runner.getLastLib.setExecutionPhase(Phase.ERRORED)
+        job.msg = "Ran out of swaps to make. Either rerun or modify your design."
+      }
+      case ioobe: IndexOutOfBoundsException => {
+        job.runner.getLastLib.setExecutionPhase(Phase.ERRORED)
+        job.msg = "Got an invalid design. Modify your design parameters."
+      }
+      case npe: NullPointerException => {
+        job.runner.getLastLib.setExecutionPhase(Phase.ERRORED)
+        job.msg = "Couldn't find a way to make this library without violating restrictions. Try modifying parameters."
+      }
+      case rte: RuntimeException => {
+        if (rte.getCause != null) handleError(rte.getCause, job)
+      }
+      case t: Throwable => {
+        job.runner.getLastLib.setExecutionPhase(Phase.ERRORED)
+        job.msg = "Unknown error occured."
+      }
+    }
+  }
   val TIMEOUT_TIME = 60000 // 60 seconds
 
   def checkTasks(): Unit = {

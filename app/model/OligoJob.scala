@@ -28,7 +28,8 @@ class OligoJob(
                 @Constraints.Required var restrictions: String,
                 @Constraints.Required var phase: Phase,
                 var results: ResultLibrary,
-                @transient var runner: Runner
+                @transient var runner: Runner,
+                var msg: String
               )
   extends Model {
 
