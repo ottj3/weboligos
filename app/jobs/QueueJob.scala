@@ -42,7 +42,7 @@ class SchedulerActor @Inject() (queueController: QueueController) extends Actor 
         try {
           lastStart = System.currentTimeMillis()
           currJob = job
-          System.out.println("RUNNER: Starting library processing on thread " + Thread.currentThread().getName)
+          System.out.println("RUNNER: Starting library processing on thread " + Thread.currentThread().getName + " for job #" + job.id)
           job.runner.run()
           job.results = new ResultLibrary(job.runner.getLastLib)
         } catch {
@@ -74,8 +74,12 @@ class SchedulerActor @Inject() (queueController: QueueController) extends Actor 
       case rte: RuntimeException =>
         if (rte.getCause != null) handleError(rte.getCause, job)
       case t: Throwable =>
-        job.runner.getLastLib.setExecutionPhase(Phase.ERRORED)
-        job.msg = "Unknown error occured."
+        System.err.println("Unknown error occured while running job #" + job.id + ":")
+        t.printStackTrace()
+        if (job.runner.getLastLib != null) {
+          job.runner.getLastLib.setExecutionPhase(Phase.ERRORED)
+        }
+        job.msg = "Unknown error occurred."
     }
   }
   val TIMEOUT_TIME = 60000 // 60 seconds

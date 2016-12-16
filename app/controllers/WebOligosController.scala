@@ -4,16 +4,16 @@ import javax.inject._
 
 import com.avaje.ebean.annotation.Transactional
 import edu.tcnj.oligos.library.Library
-import model.Codon
-import model.OligoJob
-import play.api.data._
+import model.{Codon, OligoJob, ResultLibrary}
 import play.api.data.Forms._
+import play.api.data._
 import play.api.data.format.Formats._
-import play.api.mvc._
 import play.api.data.validation.Constraints._
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.libs.json._
+import play.api.mvc._
 import services.{Counter, DBQueries}
-
+import play.libs.{Json => JavaJson}
 
 
 /**
@@ -28,7 +28,7 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
   val jobForm = Form(single("jobId" -> nonEmptyText(minLength = 6, maxLength = 6)))
 
   val submitForm = Form(tuple(
-    "rna" -> nonEmptyText(),
+    "rna" -> text(minLength = 3).verifying(pattern("""[ACTG]+""".r, error = "Invalid nucleotides. Can only use ACTG.")),
     "oligoLength" -> number(min = 1),
     "overlapSize" -> number(min = 1),
     "overlapDiffs" -> number(min = 1),
@@ -84,14 +84,31 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
     submitForm.bindFromRequest.fold(
       formWithErrors => BadRequest(views.html.index("Welcome to WebOligos", formWithErrors, jobForm)),
       job => {
-        val jobId: Long = counter.nextCount()
-        val oligoJob = new OligoJob(jobId, job._1, job._2, job._3, job._4, job._5, job._6, job._7, job._8, job._9, job._10, job._11,
-          job._12.getOrElse(""), Library.Phase.INITIALIZING, null, null, null)
-        db.store(oligoJob)
-        queueController.add(oligoJob)
+        val jobId = makeJob(job)
         Redirect(routes.WebOligosController.view(jobId)).flashing("created" -> "true", "success" -> "Job was successfully created and is pending processing.")
       }
     )
+  }
+
+  // Form submission via API
+  def apiSubmit = Action { implicit request =>
+    submitForm.bindFromRequest.fold(
+      formWithErrors => BadRequest(Json.obj("status" -> "FormError", "message" -> formWithErrors.errorsAsJson)),
+      job => {
+        val jobId = makeJob(job)
+        Ok(Json.obj("status" -> "Success", "jobId" -> jobId, "url" -> (request.host + "/api/view/" + jobId)))
+      }
+    )
+  }
+
+  // Helper method to reduce code duplication
+  def makeJob(job: Tuple12[String, Int, Int, Int, Int, Int, Int, Option[Codon], Option[Codon], Option[Codon], Option[Codon], Option[String]]): Long = {
+    val jobId: Long = counter.nextCount()
+    val oligoJob = new OligoJob(jobId, job._1, job._2, job._3, job._4, job._5, job._6, job._7, job._8, job._9, job._10, job._11,
+      job._12.getOrElse(""), Library.Phase.INITIALIZING, null, null, null)
+    db.store(oligoJob)
+    queueController.add(oligoJob)
+    jobId
   }
 
   // job lookup form
@@ -112,6 +129,59 @@ class WebOligosController @Inject() (val messagesApi: MessagesApi, val counter: 
       Redirect(routes.WebOligosController.index()).flashing("error" -> "jobNotFound")
     } else {
       Ok(views.html.result("Viewing job #".concat(jobId.toString), job.get, submitForm))
+    }
+  }
+
+
+  /**
+    * JSON Serializers for the OligoJob and aggregated objects that need to be
+    * written to JSON to return API requests
+    */
+
+  // default serializer using fields for case classes
+  implicit val codonWrites = Json.writes[Codon]
+
+  implicit val resultLibraryWrites: Writes[ResultLibrary] = Writes { lib =>
+    if (lib == null) JsNull
+    else
+    Json.obj(
+      // use Java Play library to serialize java objects, since scala won't handle them
+      "oligos" -> JavaJson.toJson(lib.oligos),
+      "genes" -> JavaJson.toJson(lib.genes),
+      "coi" -> JavaJson.toJson(lib.coi)
+    )
+  }
+
+  implicit val oligoJobWrites: Writes[OligoJob] = Writes { job =>
+    Json.obj(
+      "id" -> job.id,
+      "rna" -> job.rna,
+      "oligoLength" -> job.oligoLength,
+      "overlapSize" -> job.overlapSize,
+      "overlapDiffs" -> job.overlapDiffs,
+      "start" -> job.start,
+      "end" -> job.end,
+      "offset" -> job.offset,
+      "codon0" -> job.codon0,
+      "codon1" -> job.codon1,
+      "codon2" -> job.codon2,
+      "codon3" -> job.codon3,
+      "restrictions" -> job.restrictions,
+      "phase" -> job.phase.toString,
+      "results" -> job.results,
+      "msg" -> job.msg
+    )
+  }
+
+  // View job result via API
+  def apiView(jobId: Long) = Action { implicit request =>
+    val job: Option[OligoJob] = db.get(jobId.toLong)
+    if (job.isEmpty) {
+      // json error message
+      NotFound(Json.obj("status" -> "JobNotFound"))
+    } else {
+      // serialize result (job details + library) and return as json
+      Ok(Json.obj("status" -> "Success", "job" -> Json.toJson(job.get)))
     }
   }
 

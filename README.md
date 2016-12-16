@@ -17,6 +17,19 @@ Note that if you encounter an `UnsatisfiedLinkError` while running the program o
 
 To test the application, visit `http://localhost:9000/test` for some sample parameters and hit submit.
 
+### API
+
+The application has API endpoints for job submission and viewing. The API returns results as JSON objects.
+
+The API can be accessed via the paths
+`/api/submit`
+`/api/view/<jobid>`
+
+The submit path takes an encoded form (using all the same fields as a normal POST request via the UI), either as HTTP Encoded data, or as JSON.
+It will return either a list of errors in the form, or, if successful, a success message and job id.
+
+The view path takes the id as part of the URL, and returns the job status, parameters, and results (if completed) as JSON.
+
 ## Known Issues
 
 Assuming all the libraries loaded correctly, there should be no uncaught exceptions in program execution at this time.
