@@ -5,17 +5,17 @@ A web service frontend for the oligo library design software. The software desig
 To produce a standalone executable version, use `bin/activator dist`. This will create a zip file with all required libraries in `target/universal` called `web-oligos-$version.zip`.
 Because the underlying oligo designer uses some libraries of its own, this zip file needs to be extracted to the `run` directory, so that `bin`, `conf`, and `lib` are on the same level as `data` and `libs`.
 
-If you just need to test the application in a dev environment, run `bin/activator run -Djava.library.path=libs` (see note in Usage section about libs).
+If you just need to test the application in a dev environment, run `bin/activator run`.
 
 ## Usage
 
 Before launching a production server, change the `play.crypto.secret` key in `conf/application.conf` to any random string. Play will *not* launch without this being changed.
 
-From the `run` directory, running `bin/web-oligos -Djava.library.path=libs` will start the Play app server. It listens to `http://localhost:9000/` by default, although can be changed with `-Dhttp.port=0000`.
+From the `run` directory, running `bin/web-oligos` will start the Play app server. It listens to `http://localhost:9000/weboligos/` by default, although can be changed with `-Dhttp.port=0000`.
 
-Note that if you encounter an `UnsatisfiedLinkError` while running the program on Linux (especially on non-Oracle JREs), you may additionally need to specify `LD_PRELOAD=/full/path/to/run/libs/libjep.so` before `bin/web-oligos`. We apologize for the inconvenience and are looking on removing this dependency from the upstream project soon.
+This software *requires* a Python 2.7 installation on the path, and *optionally* requires a Perl installation to calculate codon pair bias.
 
-To test the application, visit `http://localhost:9000/test` for some sample parameters and hit submit.
+To test the application, visit `http://localhost:9000/weboligos/test` for some sample parameters and hit submit.
 
 ### API
 
